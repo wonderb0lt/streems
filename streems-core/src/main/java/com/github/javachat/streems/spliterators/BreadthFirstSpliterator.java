@@ -1,6 +1,7 @@
 package com.github.javachat.streems.spliterators;
 
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.function.Consumer;
@@ -14,13 +15,13 @@ import java.util.function.Function;
 public final class BreadthFirstSpliterator<T>
     extends NaryTreeSpliterator<T>
 {
-    private final Deque<T> deque = new ArrayDeque<>();
+    private final Deque<Iterator<T>> deque = new ArrayDeque<>();
 
     public BreadthFirstSpliterator(final T root,
         final Function<T, Iterator<T>> fn)
     {
         super(root, fn);
-        deque.addFirst(root);
+        deque.addFirst(Collections.singletonList(root).iterator());
     }
 
     @Override
@@ -28,9 +29,13 @@ public final class BreadthFirstSpliterator<T>
     {
         if (deque.isEmpty())
             return false;
-        final T element = deque.removeFirst();
-        fn.apply(element).forEachRemaining(deque::addLast);
-        action.accept(element);
+        final Iterator<T> iterator = deque.removeFirst();
+        iterator.forEachRemaining(elem -> processElement(elem, action));
         return true;
+    }
+
+    private void processElement(final T element, Consumer<? super T> action) {
+        deque.add(fn.apply(element));
+        action.accept(element);
     }
 }
